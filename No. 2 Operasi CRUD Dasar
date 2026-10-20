@@ -1,0 +1,35 @@
+-- 1. Insert Data ke Tabel Induk 1: pengguna (3 baris)
+INSERT INTO pengguna (id_pengguna, peran_pengguna) VALUES
+('USR01', 'Petugas Lapangan'),
+('USR02', 'Operator Pusat'),
+('USR03', 'Administrator');
+
+-- 2. Insert Data ke Tabel Induk 2: ruas_jalan (3 baris)
+INSERT INTO ruas_jalan (kode_ruas, nama_ruas_jalan, kondisi_fisik, faktor_pemicu, potensi_bahaya) VALUES
+('R01', 'Tol Jakarta-Cikampek', 'Baik', 'Volume Kendaraan Tinggi', 'Kemacetan'),
+('R02', 'Tol Jagorawi', 'Sedang', 'Cuaca Hujan', 'Jalan Licin'),
+('R03', 'Jalan Pantura', 'Kurang', 'Lubang Jalan', 'Kecelakaan');
+
+-- 3. Insert Data ke Tabel Transaksi / Anak: insiden (3 baris)
+INSERT INTO insiden (kode_insiden, jenis_insiden, waktu_lapor, kode_ruas) VALUES
+('IND01', 'Kecelakaan Beruntun', '2026-10-19 08:30:00', 'R01'),
+('IND02', 'Mobil Mogok', '2026-10-19 10:15:00', 'R02'),
+('IND03', 'Pohon Tumbang', '2026-10-19 12:00:00', 'R03');
+
+ 
+-- Untuk melihat isi tabel pengguna
+SELECT * FROM pengguna;
+
+-- Untuk melihat isi tabel ruas_jalan
+SELECT * FROM ruas_jalan;
+
+-- Untuk melihat isi tabel insiden
+SELECT * FROM insiden;
+
+
+UPDATE insiden 
+SET jenis_insiden = 'Kecelakaan Tunggal (Truk Terguling)' 
+WHERE kode_insiden = 'IND01';
+
+DELETE FROM insiden 
+WHERE kode_ruas = 'R03';
