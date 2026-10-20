@@ -1,0 +1,7 @@
+SELECT 
+    b.nama_ruas_jalan, 
+    COUNT(a.kode_insiden) AS total_insiden
+FROM insiden a
+JOIN ruas_jalan b ON a.kode_ruas = b.kode_ruas
+WHERE a.waktu_lapor >= '2026-01-01'
+GROUP BY b.nama_ruas_jalan;
