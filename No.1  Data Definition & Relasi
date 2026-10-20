@@ -1,0 +1,22 @@
+CREATE TABLE `insiden` (
+  `kode_insiden` varchar(10) NOT NULL,
+  `jenis_insiden` varchar(100) NOT NULL,
+  `waktu_lapor` datetime NOT NULL,
+  `kode_ruas` varchar(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-CREATE TABLE `pengguna` (
+  `id_pengguna` varchar(10) NOT NULL,
+  `peran_pengguna` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--CREATE TABLE `ruas_jalan` (
+  `kode_ruas` varchar(10) NOT NULL,
+  `nama_ruas_jalan` varchar(100) NOT NULL,
+  `kondisi_fisik` text,
+  `faktor_pemicu` text,
+  `potensi_bahaya` text
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-------------------------------------------------
