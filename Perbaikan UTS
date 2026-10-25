@@ -1,0 +1,142 @@
+
+-- 1. TABEL MASTER: PENGGUNA
+
+CREATE TABLE pengguna (
+    id_pengguna VARCHAR(50) NOT NULL,
+    peran_pengguna VARCHAR(50) NOT NULL,
+    
+    -- Primary Key
+    CONSTRAINT pk_pengguna PRIMARY KEY (id_pengguna),
+    
+    -- Validasi: Peran tidak boleh kosong/hanya spasi
+    CONSTRAINT chk_peran_pengguna CHECK (CHAR_LENGTH(TRIM(peran_pengguna)) > 0)
+);
+
+-- 2. TABEL ATRIBUT MULTI-VALUE: DETAIL_PENGGUNA_TELEPON
+
+CREATE TABLE detail_pengguna_telepon (
+    id_pengguna VARCHAR(50) NOT NULL,
+    no_telepon VARCHAR(20) NOT NULL,
+    
+    -- Composite Primary Key
+    CONSTRAINT pk_detail_telepon PRIMARY KEY (id_pengguna, no_telepon),
+    
+    -- Foreign Key ke tabel pengguna
+    CONSTRAINT fk_telepon_pengguna FOREIGN KEY (id_pengguna)
+        REFERENCES pengguna(id_pengguna)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- 3. TABEL MASTER: INSTANSI
+
+CREATE TABLE instansi (
+    kode_instansi VARCHAR(50) NOT NULL,
+    nama_instansi VARCHAR(100) NOT NULL,
+    
+    -- Primary Key
+    CONSTRAINT pk_instansi PRIMARY KEY (kode_instansi),
+    
+    -- Validasi: Nama instansi harus unik
+    CONSTRAINT uq_nama_instansi UNIQUE (nama_instansi)
+);
+
+-- 4. TABEL MASTER: RUAS_JALAN
+
+CREATE TABLE ruas_jalan (
+    kode_ruas VARCHAR(50) NOT NULL,
+    nama_ruas_jalan VARCHAR(100) NOT NULL,
+    kondisi_fisik VARCHAR(50) DEFAULT 'Baik',
+    faktor_pemicu VARCHAR(100) DEFAULT 'Normal',
+    potensi_bahaya VARCHAR(100) DEFAULT 'Rendah',
+    
+    -- Primary Key
+    CONSTRAINT pk_ruas_jalan PRIMARY KEY (kode_ruas),
+    
+    -- Validasi: Nama ruas jalan harus unik
+    CONSTRAINT uq_nama_ruas UNIQUE (nama_ruas_jalan)
+);
+
+-- 5. TABEL TRANSAKSI: PERJALANAN
+
+CREATE TABLE perjalanan (
+    kode_perjalanan VARCHAR(50) NOT NULL,
+    id_pengguna VARCHAR(50) NOT NULL,
+    lokasi_awal VARCHAR(100) NOT NULL,
+    lokasi_tujuan VARCHAR(100) NOT NULL,
+    estimasi_waktu INT NOT NULL,              -- Dalam menit
+    estimasi_tarif DECIMAL(10,2) NOT NULL,     -- Dalam Rupiah
+    waktu_nyata INT,                           -- Dalam menit
+    kendala_operasional VARCHAR(255) DEFAULT 'Tidak Ada',
+    
+    -- Primary Key
+    CONSTRAINT pk_perjalanan PRIMARY KEY (kode_perjalanan),
+    
+    -- Foreign Key ke tabel pengguna
+    CONSTRAINT fk_perjalanan_pengguna FOREIGN KEY (id_pengguna)
+        REFERENCES pengguna(id_pengguna)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+        
+    -- Validasi Nilai Non-Negatif
+    CONSTRAINT chk_estimasi_waktu CHECK (estimasi_waktu > 0),
+    CONSTRAINT chk_estimasi_tarif CHECK (estimasi_tarif >= 0),
+    CONSTRAINT chk_waktu_nyata CHECK (waktu_nyata IS NULL OR waktu_nyata >= 0)
+);
+
+-- 6. TABEL JEMBATAN (MANY-TO-MANY): PERJALANAN_RUAS
+
+CREATE TABLE perjalanan_ruas (
+    kode_perjalanan VARCHAR(50) NOT NULL,
+    kode_ruas VARCHAR(50) NOT NULL,
+    
+    -- Composite Primary Key
+    CONSTRAINT pk_perjalanan_ruas PRIMARY KEY (kode_perjalanan, kode_ruas),
+    
+    -- Foreign Keys
+    CONSTRAINT fk_pr_perjalanan FOREIGN KEY (kode_perjalanan)
+        REFERENCES perjalanan(kode_perjalanan)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+        
+    CONSTRAINT fk_pr_ruas FOREIGN KEY (kode_ruas)
+        REFERENCES ruas_jalan(kode_ruas)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- 7. TABEL TRANSAKSI: INSIDEN
+CREATE TABLE insiden (
+    kode_insiden VARCHAR(50) NOT NULL,
+    jenis_insiden VARCHAR(100) NOT NULL,
+    waktu_lapor DATETIME DEFAULT CURRENT_TIMESTAMP,
+    kode_ruas VARCHAR(50) NOT NULL,
+    kode_instansi VARCHAR(50) NOT NULL,
+    
+    -- Primary Key
+    CONSTRAINT pk_insiden PRIMARY KEY (kode_insiden),
+    
+    -- Foreign Keys
+    CONSTRAINT fk_insiden_ruas FOREIGN KEY (kode_ruas)
+        REFERENCES ruas_jalan(kode_ruas)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+        
+    CONSTRAINT fk_insiden_instansi FOREIGN KEY (kode_instansi)
+        REFERENCES instansi(kode_instansi)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- 8. VIEW AGREGASI (PENGGANTI TABEL REKAP REDUNDAN)
+
+CREATE VIEW view_rekap_dashboard_ruas AS
+SELECT 
+    r.kode_ruas,
+    r.nama_ruas_jalan,
+    COUNT(DISTINCT i.kode_insiden) AS total_insiden,
+    AVG(p.waktu_nyata) AS rata_waktu_nyata_perjalanan,
+    CASE 
+        WHEN COUNT(DISTINCT i.kode_insiden) > 5 THEN 'Rawan Tinggi'
+        WHEN COUNT(DISTINCT i.kode_insiden) BETWEEN 1 AND 5 THEN 'Sedang'
+        ELSE 'Aman'
+    END AS status_kerawanan
+FROM ruas_jalan r
+LEFT JOIN insiden i ON r.kode_ruas = i.kode_ruas
+LEFT JOIN perjalanan_ruas pr ON r.kode_ruas = pr.kode_ruas
+LEFT JOIN perjalanan p ON pr.kode_perjalanan = p.kode_perjalanan
+GROUP BY r.kode_ruas, r.nama_ruas_jalan;
